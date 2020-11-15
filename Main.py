@@ -19,8 +19,24 @@ sc = SparkContext(conf = conf)
 #print(sc._conf.get('spark.driver.memory'))
 spark = SparkSession(sc)
 
+def rules(tupleCountPrevious, tupleCount, wordsFreq, index):
+    for tuples in tupleCount.collect():
+        for inde in range (index-1, 1, -1):
+            combination = combinations(tuples[0], inde)
+            for possibleCombination in combination:
+                Celuiquonagerte = list(tuples[0])-list(possibleCombination)
+                
+        
+        for permut in permutations(tupleInd,index-1)
+
+
+    #for permut in permutations(set(tupleFreqSet.collect()), len(tupleFreqSet.collect())):
+       # print(permut)
+
+
+
 def frequent(support):
-    rawPurchases = sc.textFile("datas/T10I4D100K.dat")
+    rawPurchases = sc.textFile("datas/T10I4D100K1.dat")
     total = rawPurchases.count()
 
     words = rawPurchases.flatMap(lambda line: line.split(" "))
@@ -53,13 +69,22 @@ def frequent(support):
 
     while tupleCount.count() > 0:
         print(index)
+        tupleCountRules = tupleCount
+
         tupleFreq = tupleCount.map(lambda x: x[0]) # get the item for the pair (item, count)
+        #####
+        
+        #####
         tupleFreqSet = set(tupleFreq.collect())
+       
         if index == 2:
             explodeTuple = tupleFreqSet
         else:
             explodeTuple = tupleFreq.reduce(lambda x,y: set(x) | set(y))
         wordsFreq = wordsFreq.filter(lambda x: x in explodeTuple)
+        ##
+        
+        ##
 
         ##
         # tuplePrec = sc.parallelize(list(combinations(wordsFreq.collect(), index))) # Compute all the pairs of items possible
@@ -88,9 +113,13 @@ def frequent(support):
         tupleCount = tupleCount.map(lambda pair: (pair, 1)).reduceByKey(lambda a,b: a + b)
         tupleCount = tupleCount.filter(lambda x: (x[1]/total)*100 >= support) 
 
-        print(tupleCount.count())
+        
+        
+        rules(tupleCountRules, tupleCount, wordsFreq, index)
 
         index += 1
+
+
 
 
 
