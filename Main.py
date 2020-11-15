@@ -53,8 +53,6 @@ def frequent(support):
 
     while tupleCount.count() > 0:
         print(index)
-        #print(wordsFreq.count())
-        #print(tupleCount.collect())
         tupleFreq = tupleCount.map(lambda x: x[0]) # get the item for the pair (item, count)
         tupleFreqSet = set(tupleFreq.collect())
         if index == 2:
@@ -62,9 +60,21 @@ def frequent(support):
         else:
             explodeTuple = tupleFreq.reduce(lambda x,y: set(x) | set(y))
         wordsFreq = wordsFreq.filter(lambda x: x in explodeTuple)
-        tuplePrec = sc.parallelize(list(combinations(wordsFreq.collect(), index))) # Compute all the pairs of items possible
-        if index > 2: 
-            tuplePrec = tuplePrec.filter(lambda x: list(set(combinations(list(x), (index - 1))) & tupleFreqSet))
+
+        ##
+        # tuplePrec = sc.parallelize(list(combinations(wordsFreq.collect(), index))) # Compute all the pairs of items possible
+        # if index > 2: 
+        #     tuplePrec = tuplePrec.filter(lambda x: list(set(combinations(list(x), (index - 1))) & tupleFreqSet))
+        ##
+
+        wordsFreqList = wordsFreq.collect()
+        if index == 2:
+            tuplePrec = tupleFreq.map(lambda x: [[x,i] for i in wordsFreqList])
+        else:
+            tuplePrec = tupleFreq.map(lambda x: [list(x) + [i] for i in wordsFreqList])
+        tuplePrec = tuplePrec.map(lambda x: [sorted(i) for i in x])
+        tuplePrec = tuplePrec.flatMap(lambda x: x)
+        tuplePrec = tuplePrec.map(lambda x: tuple(x))
 
         tuplePrecDatas = tuplePrec.collect()
         dataSet = set(tuplePrecDatas)
@@ -77,7 +87,6 @@ def frequent(support):
         tupleCount = tupleCount.flatMap(lambda x: x)
         tupleCount = tupleCount.map(lambda pair: (pair, 1)).reduceByKey(lambda a,b: a + b)
         tupleCount = tupleCount.filter(lambda x: (x[1]/total)*100 >= support) 
-        #print(wordsFreq.count())
 
         print(tupleCount.count())
 
