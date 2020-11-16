@@ -19,24 +19,40 @@ sc = SparkContext(conf = conf)
 #print(sc._conf.get('spark.driver.memory'))
 spark = SparkSession(sc)
 
-def rules(tupleCountPrevious, tupleCount, wordsFreq, index):
-    for tuples in tupleCount.collect():
-        for inde in range (index-1, 1, -1):
-            combination = combinations(tuples[0], inde)
-            for possibleCombination in combination:
-                Celuiquonagerte = list(tuples[0])-list(possibleCombination)
+def rules(RDD, total, index, s):
+    lastComputeTuple = RDD[index-1].collect()
+    for tuples in lastComputeTuple:
+        valueTuples = tuples[1]
+        for i in range (index-1, 1, -1):
+            combination = combinations(tuples[0], i)
+            for A in combination:
+                B = list(set(tuples[0])-set(A))
+                B.sort()
+                print(str(A)+ " -> " + str(B))
+
+                indexA = len(A)-1
+                indexB = len(B)-1
+                valueA, valueB = 0, 0
+                if len(A) == 1:
+                    valueA = RDD[indexA].filter(lambda x: x[0] == A[0]).first()[1]
+                else:
+                    valueA = RDD[indexA].filter(lambda x: x[0] == A).first()[1]
                 
-        
-        for permut in permutations(tupleInd,index-1)
-
-
-    #for permut in permutations(set(tupleFreqSet.collect()), len(tupleFreqSet.collect())):
-       # print(permut)
+                if len(B) == 1:
+                    valueB = RDD[indexB].filter(lambda x: x[0] == B[0]).first()[1]
+                else:
+                    valueB = RDD[indexB].filter(lambda x: x[0] == tuple(B)).first()[1]
+                
+                confidence = valueTuples/valueA
+                if confidence >= s:
+                    print("confidence = "+str(confidence))
+                    print("interest = "+str(confidence - valueB/total))
+                
 
 
 
 def frequent(support):
-    rawPurchases = sc.textFile("datas/T10I4D100K1.dat")
+    rawPurchases = sc.textFile("datas/T10I4D100K.dat")
     total = rawPurchases.count()
 
     words = rawPurchases.flatMap(lambda line: line.split(" "))
@@ -65,7 +81,9 @@ def frequent(support):
     # print(pairCount.count())
 
     tupleCount = wordCounts
-    index = 2    
+    index = 2  
+
+    RDD = [wordCounts]
 
     while tupleCount.count() > 0:
         print(index)
@@ -113,9 +131,10 @@ def frequent(support):
         tupleCount = tupleCount.map(lambda pair: (pair, 1)).reduceByKey(lambda a,b: a + b)
         tupleCount = tupleCount.filter(lambda x: (x[1]/total)*100 >= support) 
 
-        
-        
-        rules(tupleCountRules, tupleCount, wordsFreq, index)
+        RDD.append(tupleCount)
+        print(tupleCount.count())
+
+        rules(RDD, total, index, 0.9)
 
         index += 1
 
