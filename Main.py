@@ -12,7 +12,7 @@ from operator import truediv
 
 conf = SparkConf().setAppName("App")
 conf = (conf.setMaster('local[*]')
-       .set('spark.driver.memory', '5G')
+       .set('spark.driver.memory', '8G')
        .set("spark.driver.host", "127.0.0.1"))
 
 sc = SparkContext(conf = conf)
