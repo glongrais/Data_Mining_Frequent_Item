@@ -28,7 +28,7 @@ def rules(RDD, total, s):
     index = 1
     for rdd in RDDDict[1:]: #For each tuples sizes 
         for key in rdd.keys():  #looping on each frequent pairs, then each frequent triples ..etc
-            for i in range (index, 1, -1): 
+            for i in range (index, 0, -1): 
                 combination = combinations(key, i) #creating first part of rule (for (A,B)->(C), generate (A,B))
                 for A in combination:
                     B = list(set(key)-set(A)) #retrive the second part of the rule for (A,B)-> (C), retrive (C)
@@ -53,9 +53,8 @@ def rules(RDD, total, s):
 
                     confidence = rdd[key]/valueA #Confidence calculation
                     if confidence >= s: #display only rules equal or higher than confidence
-                        print(str(A)+ " -> " + str(B))
-                        print("confidence = "+str(confidence))
-                        print("interest = "+str(abs(confidence - valueB/total))) #display and compute interest
+                        print(str(A)+ " -> " + str(B) +" Confidence : "+str(confidence)+" and Interest : "+str(abs(confidence - valueB/total)))
+                        
                         rulesNumber += 1 #incremente number of rules higher than confidence
         index += 1
     print("Number of rules : "+str(rulesNumber))
@@ -78,14 +77,16 @@ def frequent(support, confidence):
 
     tupleCount = wordCounts
     index = 2  
-    print(1)
+    print("________________________")
+    print("Support : "+str(support)+"    Confidence :"+str(confidence))
+    print("Number of tuples for size 1 :")
     print(tupleCount.count()) #print number of frequent idividual item
     RDD = [wordCounts] # Create a list containing a list of RDD, each RDD containing the pairs of frequent tuples which their frequency. Useful for generating rules
 
 
     #loop for each tuples sizes (pairs, triple, quad..etc)
     while tupleCount.count() > 0:
-        print(index) #representing size of tuple
+        print("Number of tuples for size "+str(index)+" :") #representing size of tuple
         tupleCountRules = tupleCount
 
         tupleFreq = tupleCount.map(lambda x: x[0]) # get the item for the pair (item, count)
@@ -100,14 +101,16 @@ def frequent(support, confidence):
         wordsFreq = wordsFreq.filter(lambda x: x in explodeTuple) 
         
 
-
+        #Create all possible n-tuples from frequent n-1tuples
         wordsFreqList = wordsFreq.collect()
         if index == 2:
             tuplePrec = tupleFreq.map(lambda x: [[x,i] for i in wordsFreqList])
         else:
             tuplePrec = tupleFreq.map(lambda x: [list(x) + [i] for i in wordsFreqList])
-        tuplePrec = tuplePrec.map(lambda x: [sorted(i) for i in x])
-        tuplePrec = tuplePrec.flatMap(lambda x: x)
+
+
+        tuplePrec = tuplePrec.map(lambda x: [sorted(i) for i in x])#Sort all created n-tuples
+        tuplePrec = tuplePrec.flatMap(lambda x: x) 
         tuplePrec = tuplePrec.map(lambda x: tuple(x))
 
         tuplePrecDatas = tuplePrec.collect()
@@ -115,10 +118,10 @@ def frequent(support, confidence):
         wordsFreqList = wordsFreq.collect()
         wordsFreqSet = set(wordsFreqList)
 
-        tupleCount = purchases.filter(lambda x: len(list(set(x) & wordsFreqSet)) >= index) #Remove to short basket (i.e. remove basket of 2 if we are creating triple)
+        tupleCount = purchases.filter(lambda x: len(list(set(x) & wordsFreqSet)) >= index) #Remove basket without not enought frequent item
         tupleCount = tupleCount.map(lambda x : sorted(x))                                  #sort 
-        tupleCount = tupleCount.map(lambda x: list(combinations(x, index)))                #
-        tupleCount = tupleCount.map(lambda x: list(set(x) & dataSet))
+        tupleCount = tupleCount.map(lambda x: list(combinations(x, index)))                #Create all possible combinaison 
+        tupleCount = tupleCount.map(lambda x: list(set(x) & dataSet))                      #remove non frequent combinaison
         tupleCount = tupleCount.flatMap(lambda x: x)
         tupleCount = tupleCount.map(lambda pair: (pair, 1)).reduceByKey(lambda a,b: a + b) #count number of tuples
         tupleCount = tupleCount.filter(lambda x: (x[1]/total)*100 >= support)              #remove tuples below support
@@ -128,7 +131,9 @@ def frequent(support, confidence):
         print(tupleCount.count())
 
         index += 1
-    
+    print("_____________________")
+    print("Associations rules")
+
     rules(RDD, total, confidence) #Generating rules
 
 
