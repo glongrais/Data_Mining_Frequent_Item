@@ -12,7 +12,7 @@ from operator import truediv
 
 conf = SparkConf().setAppName("App")
 conf = (conf.setMaster('local[*]')
-       .set('spark.driver.memory', '8G')
+       .set('spark.driver.memory', '5G')
        .set("spark.driver.host", "127.0.0.1"))
 
 sc = SparkContext(conf = conf)
@@ -21,75 +21,86 @@ spark = SparkSession(sc)
 
 #Generate the rules 
 def rules(RDD, total, s):
-    RDDDict = []
+    rulesNumber = 0 #to print the final number of rules
+    RDDDict = [] 
     for rdd in RDD:
         RDDDict.append(rdd.collectAsMap())
     index = 1
-    for rdd in RDDDict[1:]:
-        for key in rdd.keys():
-            for i in range (index, 1, -1):
-                combination = combinations(key, i)
+    for rdd in RDDDict[1:]: #For each tuples sizes 
+        for key in rdd.keys():  #looping on each frequent pairs, then each frequent triples ..etc
+            for i in range (index, 1, -1): 
+                combination = combinations(key, i) #creating first part of rule (for (A,B)->(C), generate (A,B))
                 for A in combination:
-                    B = list(set(key)-set(A))
+                    B = list(set(key)-set(A)) #retrive the second part of the rule for (A,B)-> (C), retrive (C)
                     B.sort()
 
                     indexA = len(A)-1
                     indexB = len(B)-1
                     valueA, valueB = 0, 0
+
+                    #retrive from RDD, the number of time, the FIRST part of the rules appears
                     if len(A) == 1:
                         valueA = RDDDict[indexA][A[0]]
                     else:
                         valueA = RDDDict[indexA][A]
                     
+                    #retrive from RDD, the number of time, the SECOND part of the rules appears
                     if len(B) == 1:
                         valueB = RDDDict[indexB][B[0]]
                     else:
                         valueB = RDDDict[indexB][tuple(B)]
                     
-                    confidence = rdd[key]/valueA
-                    if confidence >= s:
+
+                    confidence = rdd[key]/valueA #Confidence calculation
+                    if confidence >= s: #display only rules equal or higher than confidence
                         print(str(A)+ " -> " + str(B))
                         print("confidence = "+str(confidence))
-                        print("interest = "+str(abs(confidence - valueB/total)))
+                        print("interest = "+str(abs(confidence - valueB/total))) #display and compute interest
+                        rulesNumber += 1 #incremente number of rules higher than confidence
         index += 1
-                
+    print("Number of rules : "+str(rulesNumber))
 
 
 #Generate frequent tuples
-def frequent(support):
+def frequent(support, confidence):
     rawPurchases = sc.textFile("datas/T10I4D100K.dat") # Get the datas
-    total = rawPurchases.count() # 
+    total = rawPurchases.count() # Total number of basket
 
-    words = rawPurchases.flatMap(lambda line: line.split(" "))
-    purchases = rawPurchases.map(lambda x: x.split(" "))
+    words = rawPurchases.flatMap(lambda line: line.split(" ")) # each single item
+    purchases = rawPurchases.map(lambda x: x.split(" ")) 
 
     wordCounts = words.map(lambda word: (word, 1)).reduceByKey(lambda a,b: a + b) # Count frequent individual item
     wordCounts = wordCounts.filter(lambda x: len(x[0])>=1 ) #Remove retour à la ligne
     wordCounts = wordCounts.filter(lambda x: (x[1]/total)*100 >= support ) #Remove items below support
 
-    wordsFreq = wordCounts.sortByKey(True)
+    wordsFreq = wordCounts.sortByKey(True) #Sort the items
     wordsFreq = wordsFreq.map(lambda x: x[0]) # get the item for the pair (item, count)
 
     tupleCount = wordCounts
     index = 2  
     print(1)
-    print(tupleCount.count())
-    RDD = [wordCounts]
+    print(tupleCount.count()) #print number of frequent idividual item
+    RDD = [wordCounts] # Create a list containing a list of RDD, each RDD containing the pairs of frequent tuples which their frequency. Useful for generating rules
 
+
+    #loop for each tuples sizes (pairs, triple, quad..etc)
     while tupleCount.count() > 0:
-        print(index)
+        print(index) #representing size of tuple
         tupleCountRules = tupleCount
 
         tupleFreq = tupleCount.map(lambda x: x[0]) # get the item for the pair (item, count)
    
+
+        #create RDD of items with all frequent items from the previous tuples created
         tupleFreqSet = set(tupleFreq.collect())
-       
         if index == 2:
             explodeTuple = tupleFreqSet
         else:
-            explodeTuple = tupleFreq.reduce(lambda x,y: set(x) | set(y))
-        wordsFreq = wordsFreq.filter(lambda x: x in explodeTuple)
+            explodeTuple = tupleFreq.reduce(lambda x,y: set(x) | set(y)) 
+        wordsFreq = wordsFreq.filter(lambda x: x in explodeTuple) 
         
+
+
         wordsFreqList = wordsFreq.collect()
         if index == 2:
             tuplePrec = tupleFreq.map(lambda x: [[x,i] for i in wordsFreqList])
@@ -104,13 +115,13 @@ def frequent(support):
         wordsFreqList = wordsFreq.collect()
         wordsFreqSet = set(wordsFreqList)
 
-        tupleCount = purchases.filter(lambda x: len(list(set(x) & wordsFreqSet)) >= index)
-        tupleCount = tupleCount.map(lambda x : sorted(x))
-        tupleCount = tupleCount.map(lambda x: list(combinations(x, index)))
+        tupleCount = purchases.filter(lambda x: len(list(set(x) & wordsFreqSet)) >= index) #Remove to short basket (i.e. remove basket of 2 if we are creating triple)
+        tupleCount = tupleCount.map(lambda x : sorted(x))                                  #sort 
+        tupleCount = tupleCount.map(lambda x: list(combinations(x, index)))                #
         tupleCount = tupleCount.map(lambda x: list(set(x) & dataSet))
         tupleCount = tupleCount.flatMap(lambda x: x)
-        tupleCount = tupleCount.map(lambda pair: (pair, 1)).reduceByKey(lambda a,b: a + b)
-        tupleCount = tupleCount.filter(lambda x: (x[1]/total)*100 >= support) 
+        tupleCount = tupleCount.map(lambda pair: (pair, 1)).reduceByKey(lambda a,b: a + b) #count number of tuples
+        tupleCount = tupleCount.filter(lambda x: (x[1]/total)*100 >= support)              #remove tuples below support
 
         if tupleCount.count() > 0:
             RDD.append(tupleCount)
@@ -118,15 +129,16 @@ def frequent(support):
 
         index += 1
     
-    rules(RDD, total, 0.9)
+    rules(RDD, total, confidence) #Generating rules
 
 
 
 
 
 if sys.argv[1] == "Frequent":
-    support = float(sys.argv[2]) #if we call compare, perform compare function for jaccard similarity 
-    frequent(support)
+    support = float(sys.argv[2]) #Get the support parameter
+    confidence = float(sys.argv[3]) #Get the confidence paramter for rules
+    frequent(support, confidence) 
 else:    
-    frequent(0.05)
+    frequent(1,0.9)
 
