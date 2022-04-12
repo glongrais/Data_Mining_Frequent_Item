@@ -1,4 +1,14 @@
-# Data_Mining_Frequent_Item
+# Finding Frequent Items 
+
+<p align="center">
+  <img alt="KTH" src="https://img.shields.io/badge/-KTH-%231954a6?style=flat-square" />
+</p>
+
+Lab 2 for the ID2222 Data Mining course at [KTH](https://www.kth.se/en).
+
+## Principle
+
+The project explores different ways to find similar items from a dataset using [Apache Spark](https://spark.apache.org/).
 # Introduction
 The problem of discovering association rules between itemsets in a sales transaction database (a set of baskets) includes the following two sub-problems [R. Agrawal and R. Srikant, VLDB '94 (Connexions vers un site externe.)]:
 
@@ -14,6 +24,7 @@ The implementation can be done using any big data processing framework, such as 
 Optional task for extra bonus
 Solve the second sub-problem, i.e., develop and implement an algorithm for generating association rules between frequent itemsets discovered by using the Apriori algorithm in a dataset of sales transactions. The rules must have support at least s and confidence at least c, where s and c are given as input parameters.
 
+<!--
 # Datasets
 As a sale transaction dataset, you can use this dataset, which includes generated transactions (baskets) of hashed items – you use any browser, e.g., Google Chrome, or a text editor, e.g., WordPad to view the file under Windows.
 You can also use any other transaction datasets as an input dataset that you can find on the Web.
@@ -28,3 +39,9 @@ Source code (with comments);
 Makefile or scripts to build and run (if needed); 
 Report (in PDF) with a short description of your solution, instructions how to build and to run, command-line parameters, if any (including default values), results, e.g., plots or screenshots. 
 Within a week after the homework deadline, you present and demonstrate your homework on your own laptop to a course instructor. A Doodle pool will be provided to book a time slot for presentation.
+-->
+
+## Authors
+
+* [Nathan Labbe](https://github.com/NathanLabbe)
+* [Guillaume Longrais](https://github.com/glongrais)
