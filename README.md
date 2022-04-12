@@ -8,7 +8,8 @@ Lab 2 for the ID2222 Data Mining course at [KTH](https://www.kth.se/en).
 
 ## Principle
 
-The project explores different ways to find similar items from a dataset using [Apache Spark](https://spark.apache.org/).
+The project is an implementation of the [Apriori algorithm](https://weber.itn.liu.se/~aidvi/courses/06/dm/lectures/lec7.pdf) in order to fing frequent items and association rules from a dataset using [Apache Spark](https://spark.apache.org/). 
+
 # Introduction
 The problem of discovering association rules between itemsets in a sales transaction database (a set of baskets) includes the following two sub-problems [R. Agrawal and R. Srikant, VLDB '94 (Connexions vers un site externe.)]:
 
